@@ -55,16 +55,18 @@ int main(int argc, char *argv[])
 		return -3;
 	}
 
-	if (connect(socked, &servaddr, sizeof(servaddr)) < 0)
+	if (connect(socked, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
 	{
 		printf ("connect error\n");
 
+		perror("connect error");
 		return -4;
 	}
 
 	while (n = read(socked, receline, MAXLINE) > 0)
 	{
 		receline[n] = '\0';
+		printf("Good\n");
 		if (fputs(receline, stdout) == EOF)
 		{
 			printf ("puts error\n");
