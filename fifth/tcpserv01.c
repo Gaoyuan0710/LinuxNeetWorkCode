@@ -24,8 +24,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-#define SERV_PORT 11111
-#define LISTENQ 200
+#define SERV_PORT 9877
+#define LISTENQ 0
 #define MAXLINE 10
 
 void str_echo(int socked){
@@ -33,14 +33,14 @@ void str_echo(int socked){
 	char buf[MAXLINE];
 
 again:
-	while ((n = read(socked, buf, MAXLINE)) >= 0){
-		write(socked, buf, n);
+	while ((n = recv(socked, buf, MAXLINE, 0)) >= 0){
+		printf("recv %s\n", buf);
+		send(socked, buf, n, 0);
 	}
 	if (n < 0 && errno == EINTR){
 		goto again;
 	}
 	else if(n < 0) {
-		printf ("hhhh %s\n", buf);
 		printf ("str_echo : read error\n");
 	}
 }
@@ -53,24 +53,49 @@ int main(int argc, char *argv[])
 	struct sockaddr_in cliaddr, servaddr;
 
 	listenfd = socket(AF_INET, SOCK_STREAM, 0);
+
+	if (listenfd < 0){
+		printf(" socket error \n");
+		
+		return -1;
+	}
+
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port = htons(SERV_PORT);
 
-	bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
-	listen(listenfd, LISTENQ);
+	if ((bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr))) < 0){
+		printf("bind error\n");
+
+		return -1;
+	}
+
+	
+	if (listen(listenfd, LISTENQ) < 0){
+		printf("listen error\n");
+
+		return -1;
+	}
 
 	for (;;){
 		clilen = sizeof(cliaddr);
 		connfd = accept(listenfd, (struct sockaddr *)&cliaddr, &clilen);
 
+		if (connfd < 0){
+			printf("accpet error\n");
+
+			return -1;
+		}
+
 		if ((childpid = fork()) == 0){
 			close(listenfd);
-			str_echo(listenfd);
+			str_echo(connfd);
 			exit(0);
 		}
-		close(connfd);
+		else{
+			close(connfd);
+		}
 	}
 
 	return EXIT_SUCCESS;
