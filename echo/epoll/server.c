@@ -61,15 +61,76 @@ int dealWithEpoll(int listenfd){
 	int epollFd;
 	struct epoll_event events[EVENTMAXSIZE];
 	char buf[MAXSIZE];
+	int num;
+	int i;
+	int fd;
 
 	memset(buf, 0, MAXSIZE);
 
 	epollFd = epoll_create(FDMAXSIZE);
 
-	addEvent(epollFd, listenfd, EPOLLIN);	
+	addEvent(epollFd, listenfd, EPOLLIN);
 
+	for (;;){
+		num = epoll_wait(epollFd, events, EVENTMAXSIZE, -1);
+
+		for (i = 0; i < num, i++){
+			fd = events[i].data.fd;
+
+			if ((fd == listenfd) && (events[i].events & EPOLLIN)){
+				dealAccept(epollFd, listenfd);
+			}
+			else if (events[i].events & EPOLLIN){
+				dealRead(epollFd, fd, buf);
+			}
+			else if (events[i].events & EPOLLOUT){
+				dealWrite(epollFd, fd, buf);
+			}
+			else {
+				;
+			}
+		}
+
+	}
 }
+void dealAccept(int epollFd, int listenfd){
+	int clifd;
+	struct sockaddr_in cliAddr;
+	socklen_t cliAddrLen;
 
+	clifd = accept(listenfd, (struct sockaddr *)&cliAddr, &cliAddrLen);
+
+	if (clifd == -1){
+		perror("accept error");
+	}
+	else{
+		printf("New Client %s : %d\n", inet_ntoa(cliAddr.sin_addr), cliAddr.sin_port);
+		addEvent(epollFd, clifd, EPOLLIN);
+	}
+}
+void dealRead(int epollFd, int fd, char *buf){
+	int readLen;
+
+	readLen = read(fd, buf, MAXSIZE);
+
+	if (readLen == -1){
+		perror("read error");
+		close(fd);
+		exit(1);
+	}
+	else if (nread == 0){
+		fprintf(stderr, "client close\n");
+		
+	}
+}
+void deleteEvent(int epollFd, int fd, int state){
+	struct epoll_event tmp;
+	
+	tmp.events = state;
+	tmp.data.fd = fd;
+
+	epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, &tmp);
+}
 void addEvent(int epollFd, int fd, int state){
 	struct epoll_event tmp;
 
@@ -78,7 +139,6 @@ void addEvent(int epollFd, int fd, int state){
 
 	epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &tmp);
 }
-
 int main(int argc, char *argv[])
 {
 

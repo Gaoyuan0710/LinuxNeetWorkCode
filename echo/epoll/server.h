@@ -30,4 +30,7 @@
 int socketPrepare(const char *ip, int port);
 int dealWithEpoll(int listenFd);
 void addEvent(int epollFd, int fd, int state);
+void dealAccept(int epollFd, int listenFd);
+void dealRead(int epollFd, int fd, char *buf);
+
 #endif

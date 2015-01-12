@@ -26,7 +26,7 @@
 
 #define SERV_PORT 9877
 #define LISTENQ 0
-#define MAXLINE 10
+#define MAXLINE 100
 
 void str_echo(int socked){
 	ssize_t n;
