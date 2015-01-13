@@ -74,7 +74,7 @@ int dealWithEpoll(int listenfd){
 	for (;;){
 		num = epoll_wait(epollFd, events, EVENTMAXSIZE, -1);
 
-		for (i = 0; i < num, i++){
+		for (i = 0; i < num; i++){
 			fd = events[i].data.fd;
 
 			if ((fd == listenfd) && (events[i].events & EPOLLIN)){
@@ -119,7 +119,7 @@ void dealRead(int epollFd, int fd, char *buf){
 		deleteEvent(epollFd, fd, EPOLLIN);
 		exit(1);
 	}
-	else if (nread == 0){
+	else if (readLen == 0){
 		fprintf(stderr, "client close\n");
 		close(fd);
 		deleteEvent(epollFd, fd, EPOLLIN);		
