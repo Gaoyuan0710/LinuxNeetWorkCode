@@ -116,12 +116,34 @@ void dealRead(int epollFd, int fd, char *buf){
 	if (readLen == -1){
 		perror("read error");
 		close(fd);
+		deleteEvent(epollFd, fd, EPOLLIN);
 		exit(1);
 	}
 	else if (nread == 0){
 		fprintf(stderr, "client close\n");
-		
+		close(fd);
+		deleteEvent(epollFd, fd, EPOLLIN);		
 	}
+	else{
+		printf("The message is : %s\n", buf);
+		modifyEvent(epollFd, fd, EPOLLOUT);
+	}
+}
+
+void dealWrite(int epollFd, int fd, char *buf){
+	int writeLen;
+
+	writeLen = write(fd, buf, strlen(buf));
+
+	if (writeLen == -1){
+		perror("write error");
+		close(fd);
+		deleteEvent(epollFd, fd, EPOLLOUT);
+	}
+	else{
+		modifyEvent(epollFd, fd, EPOLLIN);
+	}
+	memset(buf, 0, sizeof(buf));
 }
 void deleteEvent(int epollFd, int fd, int state){
 	struct epoll_event tmp;
@@ -131,6 +153,8 @@ void deleteEvent(int epollFd, int fd, int state){
 
 	epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, &tmp);
 }
+
+
 void addEvent(int epollFd, int fd, int state){
 	struct epoll_event tmp;
 
@@ -139,9 +163,18 @@ void addEvent(int epollFd, int fd, int state){
 
 	epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &tmp);
 }
+
+void modifyEvent(int epollFd, int fd, int state){
+	struct epoll_event tmp;
+	
+	tmp.events = state;
+	tmp.data.fd = fd;
+
+	epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &tmp);
+}
 int main(int argc, char *argv[])
 {
-
+	dealWithEpoll(socketPrepare(IP, PORT));
 
 	return EXIT_SUCCESS;
 }
